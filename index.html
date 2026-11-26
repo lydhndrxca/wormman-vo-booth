@@ -122,6 +122,12 @@ pre.fmt{background:var(--panel2);border-radius:8px;padding:10px;font-size:12px;w
 @media (max-width:720px){main{grid-template-columns:1fr}#booth{order:1;padding:16px}#queue{order:2;max-height:70vh;position:static;border-right:0;border-top:1px solid var(--line)}#fx{order:3}.meter{width:auto;min-width:80px;flex:1}header h1{width:100%}#micSel{max-width:150px}.transport{justify-content:center}.after{margin-left:0;width:100%}.after button{flex:1}.take{grid-template-columns:1fr auto}.take canvas{grid-column:1/-1;grid-row:2}}
 @media (pointer:coarse){kbd{display:none}button.small{padding:8px 12px;font-size:13px}.star{padding:8px 12px}.it{padding:10px 8px}#recBtn{width:88px;height:88px}input[type=range]{height:28px}}
 .navb{display:flex;gap:6px}
+#claudeGate{position:fixed;inset:0;z-index:30;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center}
+#claudeGate h2{margin:0;font-size:26px} #claudeGate p{margin:0;max-width:420px;color:var(--dim);font-size:16px}
+a.biglink{display:inline-block;background:var(--accent);color:#1b120c;font-weight:700;font-size:20px;text-decoration:none;padding:18px 30px;border-radius:14px}
+a.biglink:hover{background:#eeab80}
+a.hdrlink{display:inline-block;background:var(--accent);color:#1b120c;font-weight:600;text-decoration:none;padding:7px 12px;border-radius:8px}
+#gateUrl{font-family:var(--mono);font-size:13px;color:var(--dim);user-select:all;word-break:break-all}
 </style>
 </head>
 <body>
@@ -133,7 +139,8 @@ pre.fmt{background:var(--panel2);border-radius:8px;padding:10px;font-size:12px;w
   <span id="clip">CLIP</span>
   <span id="mDb" class="faint" style="font-family:var(--mono);font-size:12px;width:56px">-∞ dB</span>
   <div class="spacer"></div>
-  <button id="dlBoothBtn" class="primary" hidden>Download for Chrome / Edge</button>
+  <a id="openWebBtn" class="hdrlink" href="https://lydhndrxca.github.io/wormman-vo-booth/" target="_blank" rel="noopener" hidden>Open in browser to record</a>
+  <button id="dlBoothBtn" hidden>Download file</button>
   <button id="installBtn" hidden>Install as app</button>
   <button id="scriptBtn">Load script</button>
   <button id="exportBtn">Export</button>
@@ -225,6 +232,13 @@ WORM MAN: Hi          → a "Worm Man:" speaker prefix is removed</pre></details
   <div class="foot"><button id="helpClose" class="primary">Got it</button></div>
 </div></div>
 
+<div id="claudeGate" hidden>
+  <h2><span style="color:var(--accent)">WORM MAN</span> VO Booth</h2>
+  <p>Claude can't use your microphone, so the booth records in your browser. Tap the button and it opens there, ready to go.</p>
+  <a class="biglink" href="https://lydhndrxca.github.io/wormman-vo-booth/" target="_blank" rel="noopener">Open the booth</a>
+  <div id="gateUrl">https://lydhndrxca.github.io/wormman-vo-booth/</div>
+  <button id="gateSkip" class="ghost small">Just look around here (no recording)</button>
+</div>
 <div id="toast"></div>
 
 <script>
@@ -393,7 +407,7 @@ async function enableMic(){
     stream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:dev?{exact:dev}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:{ideal:1}}});
   }catch(e){
     if(S.settings.deviceId){S.settings.deviceId="";save();return enableMic();}
-    micError=(e&&e.name==="NotAllowedError")?(window.claude?"Recording can't work inside Claude because it blocks the microphone. Click Download for Chrome / Edge at the top, then open the saved file from your Downloads folder in Chrome or Edge.":"The microphone was blocked. Allow microphone access for this page in your browser and in Windows mic privacy settings, then click Enable mic again."):"Couldn't open the microphone: "+(e&&e.message||e);
+    micError=(e&&e.name==="NotAllowedError")?(window.claude?"Recording can't work inside Claude because it blocks the microphone. Tap Open in browser to record at the top. The booth opens in your browser, where the mic works.":"The microphone was blocked. Allow microphone access for this page in your browser and in Windows mic privacy settings, then click Enable mic again."):"Couldn't open the microphone: "+(e&&e.message||e);
     toast("Mic blocked"); $("#micBtn").textContent="Enable mic"; renderBooth(); return;
   }
   micError=""; micSrc=ctx.createMediaStreamSource(stream);
@@ -912,6 +926,7 @@ function drawIcon(){const c=document.createElement("canvas");c.width=c.height=25
   if(desktop.install && (await desktop.install.state())==="available"){ const b=$("#installBtn"); b.hidden=false; b.onclick=()=>desktop.install.request().catch(()=>{}); }
 }catch(e){} })();
 
+if(window.claude){ $("#claudeGate").hidden=false; $("#openWebBtn").hidden=false; $("#gateSkip").onclick=()=>{$("#claudeGate").hidden=true;}; }
 if(window.claude&&window.claude.use){ const b=$("#dlBoothBtn"); b.hidden=false; b.onclick=async()=>{
   b.disabled=true;
   try{ const r=await fetch("booth-file.html"); if(!r.ok) throw new Error("HTTP "+r.status); const t=await r.text();
