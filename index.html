@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Worm Man VO Booth</title>
+<style>
+:root{
+  --bg:#14110f; --panel:#1e1a17; --panel2:#272220; --line:#3a332e; --text:#f1e9e1; --dim:#a89d92; --faint:#6f655c;
+  --accent:#e39a6b; --accent2:#c7774a; --rec:#ff4d4d; --ok:#7cc48a; --warn:#e8c25c; --star:#ffcf4a;
+  --radius:12px; --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+*{box-sizing:border-box}
+:root{color-scheme:dark}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--faint)}
+button:disabled{opacity:.4;cursor:default}
+button.primary{background:var(--accent);border-color:var(--accent);color:#1b120c;font-weight:600}
+button.primary:hover{background:#eeab80}
+button.ghost{background:transparent}
+button.small{padding:3px 8px;font-size:12px}
+select,input[type=text],input[type=number],textarea{font:inherit;color:var(--text);background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 8px}
+textarea{width:100%;font-family:var(--mono);font-size:13px}
+kbd{font-family:var(--mono);font-size:11px;background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--dim)}
+.muted{color:var(--dim)} .faint{color:var(--faint)}
+
+header{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header h1{font-size:16px;margin:0;letter-spacing:.02em;white-space:nowrap}
+header h1 span{color:var(--accent)}
+.spacer{flex:1}
+#micSel{max-width:240px}
+.meter{width:180px;height:12px;background:#0c0a09;border:1px solid var(--line);border-radius:6px;position:relative;overflow:hidden}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,var(--ok) 0 70%,var(--warn) 70% 88%,var(--rec) 88%)}
+.meter b{position:absolute;top:0;bottom:0;width:2px;background:#fff;left:0;opacity:.8}
+#clip{font-size:11px;font-weight:700;color:var(--faint);font-family:var(--mono)}
+#clip.on{color:var(--rec)}
+
+main{flex:1;display:grid;grid-template-columns:300px 1fr 300px;min-height:0}
+aside,section{min-height:0;overflow:auto}
+#queue{border-right:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;overflow:hidden}
+.tabs{display:flex;gap:4px;padding:10px 10px 6px}
+.tabs button{flex:1;padding:5px 6px;font-size:12px}
+.tabs button.on{background:var(--accent);color:#1b120c;border-color:var(--accent)}
+#progress{padding:0 12px 8px;font-size:12px;color:var(--dim)}
+#list{overflow:auto;flex:1;padding:0 6px 20px}
+.grp{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);padding:12px 8px 4px}
+.it{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;border-radius:8px;cursor:pointer;border:1px solid transparent}
+.it:hover{background:var(--panel2)}
+.it.cur{background:var(--panel2);border-color:var(--accent2)}
+.it.alt{margin-left:18px}
+.it .lab{font-family:var(--mono);font-size:11px;color:var(--accent);white-space:nowrap}
+.it .tx{font-size:12px;color:var(--dim);overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.it .bd{margin-left:auto;font-size:11px;font-family:var(--mono);color:var(--faint);white-space:nowrap}
+.it .bd.done{color:var(--ok)}
+
+#booth{padding:24px 32px 40px;display:flex;flex-direction:column;gap:18px}
+.empty{margin:auto;text-align:center;max-width:460px;color:var(--dim)}
+.cardtop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.chip{font-family:var(--mono);font-size:12px;background:#2f2520;color:var(--accent);border:1px solid #4a3528;border-radius:999px;padding:2px 10px}
+.chip.kind{color:var(--dim);background:transparent;border-color:var(--line)}
+#bText{font-size:clamp(26px,3.4vw,44px);line-height:1.25;font-weight:600;outline:none;border-radius:8px;padding:4px 6px;margin:0 -6px}
+#bText.sfx{font-size:clamp(24px,3vw,38px)}
+#bText[contenteditable=true]{background:var(--panel2)}
+#bNote{font-size:16px;color:var(--warn);outline:none;border-radius:6px;padding:2px 6px;margin:-6px -6px 0;min-height:1em}
+#bNote:empty:before{content:"No direction note";color:var(--faint)}
+#bNote[contenteditable=true]{background:var(--panel2)}
+#bParent{font-size:14px;color:var(--dim);border-left:3px solid var(--line);padding-left:10px}
+.transport{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:16px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
+#recBtn{width:74px;height:74px;border-radius:50%;background:#2a1414;border:3px solid var(--rec);display:grid;place-items:center;padding:0}
+#recBtn i{width:30px;height:30px;border-radius:50%;background:var(--rec);transition:all .15s}
+#recBtn.on{animation:pulse 1s infinite}
+#recBtn.on i{border-radius:6px;width:26px;height:26px}
+@keyframes pulse{50%{box-shadow:0 0 0 10px rgba(255,77,77,.15)}}
+#recInfo{min-width:120px}
+#recTime{font-family:var(--mono);font-size:22px}
+#recState{font-size:12px;color:var(--dim)}
+#recState.on{color:var(--rec);font-weight:700}
+.after{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+.after button{padding:12px 18px;font-size:15px}
+#target{font-size:13px;color:var(--dim)}
+.takes{display:flex;flex-direction:column;gap:8px}
+.take{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.take.keep{border-color:#6b5a22}
+.take .nm{font-family:var(--mono);font-size:12px;min-width:110px}
+.take .nm small{display:block;color:var(--faint)}
+.take canvas{width:100%;height:40px;display:block;cursor:pointer}
+.take .acts{display:flex;gap:4px}
+.star{color:var(--faint);font-size:16px;line-height:1;padding:4px 8px}
+.star.on{color:var(--star)}
+.edrow{display:flex;gap:8px;flex-wrap:wrap}
+
+#fx{border-left:1px solid var(--line);background:var(--panel);padding:14px 16px 30px}
+#fx h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;margin:6px 0 10px;color:var(--dim)}
+.ctl{margin:10px 0}
+.ctl label{display:flex;justify-content:space-between;font-size:12px;color:var(--dim)}
+.ctl label b{font-family:var(--mono);color:var(--text);font-weight:500}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.row{display:flex;align-items:center;gap:8px;margin:8px 0;font-size:13px}
+.row input[type=checkbox]{accent-color:var(--accent);width:16px;height:16px}
+.presets{display:flex;flex-wrap:wrap;gap:4px}
+.presets button{font-size:12px;padding:4px 8px}
+.gr{height:8px;background:#0c0a09;border:1px solid var(--line);border-radius:4px;position:relative;overflow:hidden;margin-top:4px}
+.gr i{position:absolute;right:0;top:0;bottom:0;width:0;background:var(--accent)}
+hr{border:0;border-top:1px solid var(--line);margin:16px 0}
+.help{font-size:12px;color:var(--faint)}
+.help p{margin:6px 0}
+
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal.on{display:flex}
+.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;width:min(760px,100%);max-height:90vh;overflow:auto}
+.modal h3{margin:0 0 6px}
+.modal .foot{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+pre.fmt{background:var(--panel2);border-radius:8px;padding:10px;font-size:12px;white-space:pre-wrap;color:var(--dim)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--panel2);border:1px solid var(--line);padding:8px 14px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+#toast.on{opacity:1}
+.banner{background:#3a2a14;border:1px solid #6b4a1e;color:#f3d6a8;padding:10px 14px;border-radius:10px;font-size:13px}
+
+@media (max-width:1100px){html,body{height:auto;min-height:100%}body{display:block;overflow:visible}main{grid-template-columns:260px 1fr;overflow:visible}#booth,#fx{overflow:visible}#queue{max-height:85vh;position:sticky;top:0;align-self:start}#fx{grid-column:1/-1;border-left:0;border-top:1px solid var(--line)}}
+@media (max-width:720px){main{grid-template-columns:1fr}#booth{order:1;padding:16px}#queue{order:2;max-height:70vh;position:static;border-right:0;border-top:1px solid var(--line)}#fx{order:3}.meter{width:auto;min-width:80px;flex:1}header h1{width:100%}#micSel{max-width:150px}.transport{justify-content:center}.after{margin-left:0;width:100%}.after button{flex:1}.take{grid-template-columns:1fr auto}.take canvas{grid-column:1/-1;grid-row:2}}
+@media (pointer:coarse){kbd{display:none}button.small{padding:8px 12px;font-size:13px}.star{padding:8px 12px}.it{padding:10px 8px}#recBtn{width:88px;height:88px}input[type=range]{height:28px}}
+.navb{display:flex;gap:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span>WORM MAN</span> VO Booth</h1>
+  <button id="micBtn" class="primary">Enable mic</button>
+  <select id="micSel" title="Input device" disabled><option>No mic yet</option></select>
+  <div class="meter" title="Input level"><i id="mLvl"></i><b id="mPk"></b></div>
+  <span id="clip">CLIP</span>
+  <span id="mDb" class="faint" style="font-family:var(--mono);font-size:12px;width:56px">-∞ dB</span>
+  <div class="spacer"></div>
+  <button id="dlBoothBtn" class="primary" hidden>Download for Chrome / Edge</button>
+  <button id="installBtn" hidden>Install as app</button>
+  <button id="scriptBtn">Load script</button>
+  <button id="exportBtn">Export</button>
+  <button id="helpBtn" class="ghost" title="Keyboard shortcuts">?</button>
+</header>
+
+<main>
+  <aside id="queue">
+    <div class="tabs">
+      <button data-f="all" class="on">All</button>
+      <button data-f="script">Lines</button>
+      <button data-f="sfx">Sound FX</button>
+      <button data-f="todo">To do</button>
+    </div>
+    <div id="progress"></div>
+    <div id="list"></div>
+  </aside>
+
+  <section id="booth"></section>
+
+  <aside id="fx">
+    <h2>Global processing</h2>
+    <div class="help"><p>You hear this live when playing takes back, and it gets baked into every exported file. Raw takes are never changed.</p></div>
+    <div class="row"><input type="checkbox" id="bypass"><label for="bypass">Bypass (hear raw)</label></div>
+    <div class="presets" id="presets"></div>
+    <div class="ctl"><label>Threshold <b id="v_threshold"></b></label><input type="range" id="threshold" min="-60" max="0" step="1"></div>
+    <div class="ctl"><label>Ratio <b id="v_ratio"></b></label><input type="range" id="ratio" min="1" max="20" step="0.5"></div>
+    <div class="ctl"><label>Attack <b id="v_attack"></b></label><input type="range" id="attack" min="0" max="100" step="1"></div>
+    <div class="ctl"><label>Release <b id="v_release"></b></label><input type="range" id="release" min="20" max="1000" step="10"></div>
+    <div class="ctl"><label>Knee <b id="v_knee"></b></label><input type="range" id="knee" min="0" max="30" step="1"></div>
+    <div class="ctl"><label>Makeup gain <b id="v_makeup"></b></label><input type="range" id="makeup" min="0" max="24" step="0.5"></div>
+    <div class="ctl"><label>Gain reduction (while playing)</label><div class="gr"><i id="grBar"></i></div></div>
+    <hr>
+    <div class="row"><input type="checkbox" id="hpOn"><label for="hpOn">Low cut (rumble filter)</label></div>
+    <div class="ctl"><label>Low cut frequency <b id="v_hpFreq"></b></label><input type="range" id="hpFreq" min="40" max="200" step="5"></div>
+    <hr>
+    <h2>Export only</h2>
+    <div class="row"><input type="checkbox" id="trim"><label for="trim">Trim silence at start and end</label></div>
+    <div class="row"><input type="checkbox" id="normalize"><label for="normalize">Normalize peaks to</label><input type="number" id="normDb" min="-12" max="0" step="0.5" style="width:70px"> dB</div>
+    <div class="row"><label for="bits">WAV format</label><select id="bits"><option value="16">16-bit</option><option value="24">24-bit</option></select><span class="faint" id="srLbl"></span></div>
+    <hr>
+    <h2>Booth</h2>
+    <div class="row"><input type="checkbox" id="autoplay"><label for="autoplay">Play each take back right after recording</label></div>
+    <div class="row"><input type="checkbox" id="autoNextLines"><label for="autoNextLines">Jump to next line after a take (lines only)</label></div>
+    <div class="help" id="storeInfo"></div>
+  </aside>
+</main>
+
+<div class="modal" id="scriptModal"><div class="box">
+  <h3>Load script lines</h3>
+  <p class="muted">Paste the lines or load a .txt or .csv file. One line per row. New lines are added after any you already have, and Sound FX stay as they are.</p>
+  <textarea id="scriptText" rows="12" placeholder="Paste Worm Man's lines here..."></textarea>
+  <div class="row"><input type="file" id="scriptFile" accept=".txt,.csv,.tsv,.md,.json"></div>
+  <details><summary class="muted">Optional formatting</summary>
+<pre class="fmt"># Section name        → starts a new group (e.g. # Level 1, # Combat)
+Get off my dirt!      → a line
+(angry, shouting)     → a direction in ( ) or [ ] gets pulled out as a note
+WM_014 | Hello there  → your own label before a | or tab
+> Off my dirt!        → a line starting with > is an alternate of the line above
+WORM MAN: Hi          → a "Worm Man:" speaker prefix is removed</pre></details>
+  <div class="foot">
+    <button id="clearUnrecorded" class="ghost">Remove lines with no takes</button>
+    <div class="spacer"></div>
+    <button id="scriptCancel">Cancel</button>
+    <button id="scriptAdd" class="primary">Add lines</button>
+  </div>
+</div></div>
+
+<div class="modal" id="exportModal"><div class="box">
+  <h3>Export</h3>
+  <p class="muted">Makes a .zip of WAV files with the global processing applied, plus a manifest spreadsheet (CSV) listing every file, its label and its text.</p>
+  <div class="row"><input type="radio" name="emode" id="eSel" value="sel" checked><label for="eSel"><b>Selects.</b> Starred takes. A line with no star exports its latest take. A sound effect with no star exports all of its takes, since each one is a variation.</label></div>
+  <div class="row"><input type="radio" name="emode" id="eAll" value="all"><label for="eAll"><b>Everything.</b> Every take of every item.</label></div>
+  <div class="row"><input type="checkbox" id="eRaw"><label for="eRaw">Also include the raw unprocessed takes in a separate folder</label></div>
+  <div id="exportStatus" class="muted" style="margin-top:10px"></div>
+  <div class="foot"><button id="exportCancel">Close</button><button id="exportShare" hidden>Share zip</button><button id="exportSave" hidden>Save zip</button><button id="exportGo" class="primary">Build zip</button></div>
+</div></div>
+
+<div class="modal" id="helpModal"><div class="box">
+  <h3>Shortcuts</h3>
+  <pre class="fmt"><kbd>Space</kbd>   start / stop a take
+<kbd>Esc</kbd>     cancel the take you're recording (throws it away)
+<kbd>Enter</kbd>   next item
+<kbd>↑</kbd> <kbd>↓</kbd>   previous / next item
+<kbd>P</kbd>       play the latest take
+<kbd>S</kbd>       star the latest take as a keeper
+<kbd>B</kbd>       toggle processing bypass</pre>
+  <p class="muted">Everything is saved in this browser automatically. Use the same browser and the same file location each time. Export a zip now and then as a backup.</p>
+  <div class="foot"><button id="helpClose" class="primary">Got it</button></div>
+</div></div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+// ---------- Sound effect prompt list ----------
+const SFX = [
+ {cat:"Efforts", code:"EFF", items:[
+  ["Effort, light","Small push, step up, short hop. Quick 'hup' or 'hnn'.",4],
+  ["Effort, medium","Climbing, shoving something, a solid jump.",4],
+  ["Effort, heavy strain","Lifting way too much. Long, tight, shaky.",3],
+  ["Jump","Takeoff grunt, short and springy.",4],
+  ["Land","The 'oof' on landing. Air knocked out a bit.",4],
+  ["Pull up / climb","Hauling his body up a ledge.",3],
+  ["Throw","Short sharp exhale with a push.",3],
+  ["Attack, light","Fast swing or lunge. Small yell.",4],
+  ["Attack, heavy","Big wind-up and release. Bigger yell.",3],
+  ["Squeeze through","Wriggling through a tight gap. Strained squirmy noises.",3]
+ ]},
+ {cat:"Damage", code:"DMG", items:[
+  ["Hit, small","Quick 'ow' or 'ugh' from a light hit.",5],
+  ["Hit, big","Heavy hit. Louder, longer pain.",4],
+  ["Squished","Getting stepped on. Squeaky, compressed, gross.",3],
+  ["Burned / sizzled","Touching something hot. Yelp into a whimper.",3],
+  ["Fall damage","Hitting the ground from too high.",3],
+  ["Knocked back","Sent flying. Surprised yell trailing off.",3],
+  ["Low health","Hurt, wheezy, struggling sounds.",3]
+ ]},
+ {cat:"Deaths", code:"DTH", items:[
+  ["Death, quick","Short final cry.",3],
+  ["Death, long","Dramatic, drawn out, maybe a little funny.",2],
+  ["Death, squish","Splat death. Cut off abruptly.",2],
+  ["Death, drying out","Shriveling in the sun. Dry, crackly, fading.",2]
+ ]},
+ {cat:"Breathing", code:"BRT", items:[
+  ["Idle breathing","Calm, slightly wet breathing. Loopable if you can.",2],
+  ["Panting","Out of breath after running or digging.",3],
+  ["Gasp","Sudden surprise or fear intake.",3],
+  ["Sniff / smell","Sniffing something out.",3],
+  ["Sigh","Tired or annoyed sigh.",3]
+ ]},
+ {cat:"Worm noises", code:"WRM", items:[
+  ["Squirm / wriggle","Wet, squelchy mouth noises while moving.",4],
+  ["Burrow / dig","Grunting as he tunnels into dirt.",4],
+  ["Pop out of ground","Emerging. A pop, a 'bwah', a gasp of air.",4],
+  ["Slurp","Slurping something up.",3],
+  ["Gulp / swallow","Swallowing a mouthful of dirt or a bug.",3],
+  ["Spit out dirt","'Ptoo', 'pfft', spitting grit.",3],
+  ["Gurgle","Wet throaty gurgle.",3],
+  ["Hiss","Threatened worm hiss.",3],
+  ["Chew / munch","Eating. Squishy, crunchy chewing.",3]
+ ]},
+ {cat:"Guttural", code:"GUT", items:[
+  ["Growl, short","Low, gross warning growl.",4],
+  ["Growl, long","Building, rumbling, menacing.",3],
+  ["Guttural roar","Big angry gross roar.",3],
+  ["Weird throat noise","Clicks, croaks, gargles. Whatever feels wormy.",5],
+  ["Burp","Short and long versions.",3],
+  ["Retch / gag","Disgusted gag.",3]
+ ]},
+ {cat:"Reactions", code:"RCT", items:[
+  ["Surprise","'Huh?!', 'Whoa!'",3],
+  ["Confused","'Hmm?', 'Wha...?'",3],
+  ["Disgust","'Ugh', 'Ew', 'Bleh'",3],
+  ["Scared","Whimper or yelp.",3],
+  ["Angry","Frustrated grunt or snarl.",3],
+  ["Happy / pleased","Satisfied 'mmm!' or 'heh!'",3],
+  ["Laugh, short","Quick chuckle.",3],
+  ["Laugh, big","Full laugh. Silly or villainous.",2],
+  ["Victory","Cheer or celebration noise.",3],
+  ["Taunt","Teasing noise or raspberry.",3],
+  ["Thinking","'Hmmmm...'",2]
+ ]},
+ {cat:"Idle and misc", code:"MSC", items:[
+  ["Hum","Idle humming, a few seconds.",2],
+  ["Yawn","Sleepy yawn.",2],
+  ["Snore","Sleeping. Try for a loopable one.",2],
+  ["Wake up","Startled awake.",2],
+  ["Cough","Dusty cough.",3],
+  ["Sneeze","Build up and release.",2],
+  ["Hiccup","Single hiccups.",3],
+  ["Shiver / cold","Brrr.",2]
+ ]}
+];
+
+// ---------- helpers ----------
+const $ = s => document.querySelector(s);
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+const pad = (n,w=2) => String(n).padStart(w,"0");
+const slug = s => s.replace(/[^A-Za-z0-9]+/g,"_").replace(/^_|_$/g,"");
+const esc = s => String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dbToLin = d => Math.pow(10,d/20);
+function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("on"),2200);}
+const fmtTime = s => `${Math.floor(s/60)}:${pad(Math.floor(s%60))}.${Math.floor((s*10)%10)}`;
+
+// ---------- IndexedDB ----------
+const DB = {
+  db:null,
+  open(){return new Promise((res,rej)=>{const r=indexedDB.open("wormman_vo_booth",1);
+    r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore("meta");d.createObjectStore("takes",{keyPath:"id"});d.createObjectStore("audio");};
+    r.onsuccess=()=>{this.db=r.result;res();};r.onerror=()=>rej(r.error);});},
+  tx(store,mode,fn){return new Promise((res,rej)=>{const t=this.db.transaction(store,mode);const s=t.objectStore(store);const out=fn(s);t.oncomplete=()=>res(out&&out.result!==undefined?out.result:undefined);t.onerror=()=>rej(t.error);t.onabort=()=>rej(t.error);});},
+  get(store,key){return new Promise((res,rej)=>{const r=this.db.transaction(store).objectStore(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});},
+  all(store){return new Promise((res,rej)=>{const r=this.db.transaction(store).objectStore(store).getAll();r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});},
+  put(store,val,key){return this.tx(store,"readwrite",s=>s.put(val,key));},
+  del(store,key){return this.tx(store,"readwrite",s=>s.delete(key));}
+};
+
+// ---------- state ----------
+const DEFAULT_SETTINGS = {threshold:-20,ratio:3,attack:5,release:150,knee:6,makeup:5,hpOn:true,hpFreq:80,trim:true,normalize:true,normDb:-1,bits:"24",autoplay:false,autoNextLines:false,bypass:false,deviceId:""};
+const PRESETS = {
+  "Off":{threshold:0,ratio:1,makeup:0},
+  "Gentle":{threshold:-18,ratio:2,attack:10,release:200,knee:10,makeup:3},
+  "Standard VO":{threshold:-20,ratio:3,attack:5,release:150,knee:6,makeup:5},
+  "Punchy game":{threshold:-24,ratio:4.5,attack:3,release:100,knee:4,makeup:8},
+  "Squash it":{threshold:-30,ratio:8,attack:1,release:80,knee:2,makeup:12}
+};
+let S = {items:[],cur:null,filter:"all",settings:{...DEFAULT_SETTINGS}};
+let TAKES = []; // metadata: {id,itemId,n,at,sr,len,keep}
+const audioCache = new Map();
+
+function buildSfxItems(){
+  const out=[];
+  for(const g of SFX){ g.items.forEach(([name,note,target],i)=>{
+    out.push({id:uid(),kind:"sfx",group:"SFX: "+g.cat,label:`SFX_${g.code}_${pad(i+1)}_${slug(name)}`,text:name,note,target});
+  });}
+  return out;
+}
+let saveT=null;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>DB.put("meta",{items:S.items,cur:S.cur,filter:S.filter,settings:S.settings,baked:S.baked||0},"state").catch(e=>toast("Save failed: "+e.message)),250);}
+
+const takesOf = id => TAKES.filter(t=>t.itemId===id).sort((a,b)=>a.n-b.n);
+const itemById = id => S.items.find(i=>i.id===id);
+function orderedItems(){
+  // lines and their alts (alts right after parent), then sfx
+  const lines=S.items.filter(i=>i.kind==="line"), alts=S.items.filter(i=>i.kind==="alt"), sfx=S.items.filter(i=>i.kind==="sfx");
+  const out=[];
+  for(const l of lines){out.push(l);for(const a of alts) if(a.parentId===l.id) out.push(a);}
+  for(const a of alts) if(!lines.some(l=>l.id===a.parentId)) out.push(a);
+  return out.concat(sfx);
+}
+function isDone(it){const n=takesOf(it.id).length; return it.kind==="sfx" ? n>=(it.target||1) : n>0;}
+function visibleItems(){
+  const all=orderedItems(), f=S.filter;
+  if(f==="script") return all.filter(i=>i.kind!=="sfx");
+  if(f==="sfx") return all.filter(i=>i.kind==="sfx");
+  if(f==="todo") return all.filter(i=>!isDone(i) || i.id===S.cur);
+  return all;
+}
+
+// ---------- audio engine ----------
+let ctx=null, stream=null, micSrc=null, tapNode=null, analyser=null;
+let micError=""; let recording=false, recChunks=[], recStart=0, preroll=[], prerollLen=0;
+const PREROLL_SEC=0.25;
+const WORKLET = `class Tap extends AudioWorkletProcessor{constructor(){super();this.buf=new Float32Array(2048);this.i=0;}
+process(inputs){const ch=inputs[0]&&inputs[0][0];if(ch){for(let k=0;k<ch.length;k++){this.buf[this.i++]=ch[k];if(this.i===this.buf.length){this.port.postMessage(this.buf);this.buf=new Float32Array(2048);this.i=0;}}}return true;}}
+registerProcessor('rec-tap',Tap);`;
+
+function ensureCtx(){ if(!ctx){ ctx=new (window.AudioContext||window.webkitAudioContext)({latencyHint:"interactive"}); buildPlayChain(); $("#srLbl").textContent=(ctx.sampleRate/1000)+" kHz"; } if(ctx.state==="suspended") ctx.resume(); return ctx; }
+
+async function enableMic(){
+  ensureCtx();
+  try{
+    if(stream){stream.getTracks().forEach(t=>t.stop());}
+    if(micSrc){try{micSrc.disconnect();}catch(e){}}
+    const dev=S.settings.deviceId;
+    stream=await navigator.mediaDevices.getUserMedia({audio:{deviceId:dev?{exact:dev}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:{ideal:1}}});
+  }catch(e){
+    if(S.settings.deviceId){S.settings.deviceId="";save();return enableMic();}
+    micError=(e&&e.name==="NotAllowedError")?(window.claude?"Recording can't work inside Claude because it blocks the microphone. Click Download for Chrome / Edge at the top, then open the saved file from your Downloads folder in Chrome or Edge.":"The microphone was blocked. Allow microphone access for this page in your browser and in Windows mic privacy settings, then click Enable mic again."):"Couldn't open the microphone: "+(e&&e.message||e);
+    toast("Mic blocked"); $("#micBtn").textContent="Enable mic"; renderBooth(); return;
+  }
+  micError=""; micSrc=ctx.createMediaStreamSource(stream);
+  if(!tapNode){
+    try{
+      const url=URL.createObjectURL(new Blob([WORKLET],{type:"application/javascript"}));
+      await ctx.audioWorklet.addModule(url);
+      tapNode=new AudioWorkletNode(ctx,"rec-tap",{numberOfInputs:1,numberOfOutputs:1,channelCount:1,channelCountMode:"explicit",channelInterpretation:"speakers"});
+      tapNode.port.onmessage=e=>onChunk(e.data);
+    }catch(err){
+      tapNode=ctx.createScriptProcessor(4096,1,1);
+      tapNode.onaudioprocess=e=>onChunk(new Float32Array(e.inputBuffer.getChannelData(0)));
+    }
+    const mute=ctx.createGain();mute.gain.value=0;tapNode.connect(mute).connect(ctx.destination);
+    analyser=ctx.createAnalyser();analyser.fftSize=2048;
+  }
+  micSrc.connect(tapNode); micSrc.connect(analyser);
+  $("#micBtn").textContent="Mic on"; $("#micBtn").classList.remove("primary");
+  await listDevices();
+  const tr=stream.getAudioTracks()[0]; const st=tr&&tr.getSettings?tr.getSettings():{};
+  if(st.deviceId && !S.settings.deviceId){} // keep default
+  meterLoop(); keepAwake();
+  renderBooth();
+}
+async function listDevices(){
+  const devs=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audioinput");
+  const sel=$("#micSel"); sel.innerHTML=""; sel.disabled=false;
+  const cur=stream&&stream.getAudioTracks()[0]?stream.getAudioTracks()[0].getSettings().deviceId:"";
+  for(const d of devs){const o=document.createElement("option");o.value=d.deviceId;o.textContent=d.label||"Microphone";if(d.deviceId===cur)o.selected=true;sel.appendChild(o);}
+}
+function onChunk(f){
+  if(recording){recChunks.push(f);}
+  else{preroll.push(f);prerollLen+=f.length;const max=PREROLL_SEC*ctx.sampleRate;while(prerollLen-preroll[0].length>max){prerollLen-=preroll.shift().length;}}
+}
+let wakeLock=null;
+async function keepAwake(){ try{ if(navigator.wakeLock&&document.visibilityState==="visible"&&stream){ wakeLock=await navigator.wakeLock.request("screen"); } }catch(e){} }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") keepAwake(); });
+let pkHold=0,pkT=0,clipT=0,meterRunning=false;
+function meterLoop(){
+  if(meterRunning)return; meterRunning=true;
+  const buf=new Float32Array(2048);
+  (function tick(){
+    if(analyser){
+      analyser.getFloatTimeDomainData(buf);let pk=0;for(let i=0;i<buf.length;i++){const a=Math.abs(buf[i]);if(a>pk)pk=a;}
+      const db=pk>0?20*Math.log10(pk):-120; const pct=Math.max(0,Math.min(1,(db+60)/60));
+      $("#mLvl").style.width=(pct*100)+"%";
+      const now=performance.now(); if(pct>=pkHold||now-pkT>1200){pkHold=pct;pkT=now;} $("#mPk").style.left=`calc(${pkHold*100}% - 2px)`;
+      if(pk>=0.98){clipT=now;} $("#clip").classList.toggle("on",now-clipT<1500);
+      $("#mDb").textContent=db<-90?"-∞ dB":db.toFixed(1)+" dB";
+      if(recording) $("#recTime").textContent=fmtTime((now-recStart)/1000);
+    }
+    if(playComp && playing){ const r=-playComp.reduction; $("#grBar").style.width=Math.min(100,r/24*100)+"%"; } else $("#grBar").style.width="0";
+    requestAnimationFrame(tick);
+  })();
+}
+
+function startRec(){
+  if(!stream){toast("Click 'Enable mic' first");return;}
+  const it=itemById(S.cur); if(!it) return;
+  ensureCtx(); stopPlayback();
+  recChunks=preroll.slice(); preroll=[];prerollLen=0;
+  recording=true; recStart=performance.now();
+  renderTransport();
+}
+async function stopRec(discard){
+  if(!recording)return; recording=false;
+  // grab a tiny tail
+  const chunks=recChunks; recChunks=[];
+  renderTransport();
+  if(discard){toast("Take discarded");return;}
+  let len=0;for(const c of chunks)len+=c.length;
+  if(len < ctx.sampleRate*0.3){toast("Too short, not saved");return;}
+  const data=new Float32Array(len);let o=0;for(const c of chunks){data.set(c,o);o+=c.length;}
+  const it=itemById(S.cur);
+  const n=takesOf(it.id).reduce((m,t)=>Math.max(m,t.n),0)+1;
+  const t={id:uid(),itemId:it.id,n,at:Date.now(),sr:ctx.sampleRate,len,keep:false};
+  try{ await DB.put("audio",data,t.id); await DB.put("takes",t); }catch(e){toast("Could not save take: "+e.message);return;}
+  TAKES.push(t); audioCache.set(t.id,data);
+  lastTakeId=t.id;
+  if(S.settings.autoNextLines && it.kind!=="sfx"){ go(1); toast(`Saved ${takeName(t)}`); }
+  else { renderBooth(); if(S.settings.autoplay) play(t.id); }
+  renderList();
+}
+let lastTakeId=null;
+
+// playback chain
+let playIn=null,playHP=null,playComp=null,playMake=null,playing=null;
+function buildPlayChain(){
+  playIn=ctx.createGain(); playHP=ctx.createBiquadFilter(); playHP.type="highpass"; playHP.Q.value=0.707;
+  playComp=ctx.createDynamicsCompressor(); playMake=ctx.createGain();
+  playHP.connect(playComp); playComp.connect(playMake); playMake.connect(ctx.destination);
+  routePlay(); applyParams(playHP,playComp,playMake);
+}
+function routePlay(){
+  if(!playIn)return; try{playIn.disconnect();}catch(e){}
+  const s=S.settings;
+  if(s.bypass) playIn.connect(ctx.destination);
+  else playIn.connect(s.hpOn?playHP:playComp);
+}
+function applyParams(hp,comp,make,offline){
+  const s=S.settings, t=offline?0:ctx.currentTime;
+  const set=(p,v)=>{ if(offline) p.value=v; else p.setTargetAtTime(v,t,0.02); };
+  set(hp.frequency,s.hpFreq);
+  set(comp.threshold,s.threshold); set(comp.ratio,s.ratio); set(comp.knee,s.knee);
+  set(comp.attack,Math.max(0.0005,s.attack/1000)); set(comp.release,s.release/1000);
+  set(make.gain,dbToLin(s.makeup));
+}
+async function loadAudio(id){
+  if(audioCache.has(id))return audioCache.get(id);
+  const d=await DB.get("audio",id); if(d) audioCache.set(id,d); return d;
+}
+async function play(id){
+  ensureCtx(); stopPlayback();
+  const t=TAKES.find(x=>x.id===id); const d=await loadAudio(id); if(!d)return;
+  const b=ctx.createBuffer(1,d.length,t.sr); b.copyToChannel(d,0);
+  const src=ctx.createBufferSource(); src.buffer=b; src.connect(playIn);
+  src.onended=()=>{ if(playing&&playing.src===src){playing=null;renderTakesState();} };
+  src.start(); playing={src,id,t0:ctx.currentTime,dur:b.duration};
+  renderTakesState(); progressLoop();
+}
+function stopPlayback(){ if(playing){try{playing.src.stop();}catch(e){} playing=null; renderTakesState();} }
+
+// offline render for export
+function trimSilence(d,sr){
+  const thr=dbToLin(-48); let a=0,b=d.length-1;
+  while(a<d.length&&Math.abs(d[a])<thr)a++; while(b>a&&Math.abs(d[b])<thr)b--;
+  if(a>=b) return d;
+  a=Math.max(0,a-Math.floor(sr*0.06)); b=Math.min(d.length,b+Math.floor(sr*0.2));
+  // fade edges a touch
+  const out=d.slice(a,b); const f=Math.min(Math.floor(sr*0.005),out.length/2|0);
+  for(let i=0;i<f;i++){out[i]*=i/f; out[out.length-1-i]*=i/f;}
+  return out;
+}
+async function renderProcessed(d,sr){
+  const s=S.settings;
+  const src=s.trim?trimSilence(d,sr):d;
+  const oc=new OfflineAudioContext(1,src.length,sr);
+  const b=oc.createBuffer(1,src.length,sr); b.copyToChannel(src,0);
+  const bs=oc.createBufferSource(); bs.buffer=b;
+  const hp=oc.createBiquadFilter(); hp.type="highpass"; hp.Q.value=0.707;
+  const comp=oc.createDynamicsCompressor(), make=oc.createGain();
+  applyParams(hp,comp,make,true);
+  if(s.hpOn){bs.connect(hp);hp.connect(comp);} else bs.connect(comp);
+  comp.connect(make); make.connect(oc.destination);
+  bs.start();
+  const r=await oc.startRendering(); let out=r.getChannelData(0).slice();
+  if(s.normalize){let pk=0;for(let i=0;i<out.length;i++){const a=Math.abs(out[i]);if(a>pk)pk=a;} if(pk>0){const g=dbToLin(s.normDb)/pk;for(let i=0;i<out.length;i++)out[i]*=g;}}
+  else { for(let i=0;i<out.length;i++){ if(out[i]>1)out[i]=1; else if(out[i]<-1)out[i]=-1; } }
+  return out;
+}
+function encodeWav(d,sr,bits){
+  const bps=bits/8, len=d.length*bps, buf=new ArrayBuffer(44+len), v=new DataView(buf);
+  const w=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  w(0,"RIFF");v.setUint32(4,36+len,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*bps,true);v.setUint16(32,bps,true);v.setUint16(34,bits,true);w(36,"data");v.setUint32(40,len,true);
+  let o=44;
+  for(let i=0;i<d.length;i++){let x=Math.max(-1,Math.min(1,d[i]));
+    if(bits===16){v.setInt16(o,x<0?x*0x8000:x*0x7fff,true);o+=2;}
+    else{let n=Math.round(x<0?x*0x800000:x*0x7fffff);v.setUint8(o,n&255);v.setUint8(o+1,(n>>8)&255);v.setUint8(o+2,(n>>16)&255);o+=3;}}
+  return new Uint8Array(buf);
+}
+// minimal zip (store)
+const CRC=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xedb88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(u){let c=0xffffffff;for(let i=0;i<u.length;i++)c=CRC[(c^u[i])&255]^(c>>>8);return (c^0xffffffff)>>>0;}
+function makeZip(files){
+  const enc=new TextEncoder(), parts=[], central=[]; let off=0;
+  const d=new Date(), dt=((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1)), dd=(((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate());
+  for(const f of files){
+    const name=enc.encode(f.name), data=f.data, crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,dt,true);h.setUint16(12,dd,true);
+    h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,name.length,true);h.setUint16(28,0,true);
+    parts.push(new Uint8Array(h.buffer),name,data);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,dt,true);c.setUint16(14,dd,true);
+    c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,name.length,true);c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer),name);
+    off+=30+name.length+data.length;
+  }
+  let csize=0;for(const c of central)csize+=c.length;
+  const e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,csize,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...central,new Uint8Array(e.buffer)],{type:"application/zip"});
+}
+async function download(blob,name){
+  let dl=null; try{ if(window.claude&&window.claude.use) dl=await window.claude.use("downloads"); }catch(e){}
+  if(dl){ try{ await dl.save({filename:name,data:blob}); return true; }catch(e){ toast(e&&e.code==="declined"?"Download cancelled":"Download failed: "+((e&&(e.message||e.code))||"unknown")); return false; } }
+  if(window.claude&&window.claude.use){ toast("Downloads aren't available in this view"); return false; }
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},4000);return true;
+}
+function takeName(t){const it=itemById(t.itemId);if(!it)return "orphan_"+t.n;return `WormMan_${it.label}_${it.kind==="sfx"?"v":"take"}${pad(t.n)}`;}
+
+async function doExport(){
+  const mode=document.querySelector('input[name=emode]:checked').value, raw=$("#eRaw").checked;
+  const st=$("#exportStatus"); $("#exportGo").disabled=true;
+  const pick=[];
+  for(const it of orderedItems()){
+    const ts=takesOf(it.id); if(!ts.length)continue;
+    let sel;
+    if(mode==="all") sel=ts;
+    else { const k=ts.filter(t=>t.keep); sel=k.length?k:(it.kind==="sfx"?ts:[ts[ts.length-1]]); }
+    for(const t of sel) pick.push([it,t]);
+  }
+  if(!pick.length){st.textContent="Nothing recorded yet.";$("#exportGo").disabled=false;return;}
+  const files=[], bits=+S.settings.bits;
+  const rows=[["file","label","type","group","take","starred","text","note","seconds"]];
+  for(let i=0;i<pick.length;i++){
+    const [it,t]=pick[i]; st.textContent=`Processing ${i+1} of ${pick.length}...`;
+    const d=await loadAudio(t.id); if(!d)continue;
+    const out=await renderProcessed(d,t.sr);
+    const folder=it.kind==="sfx"?"SFX":"Lines";
+    const fn=`${folder}/${takeName(t)}.wav`;
+    files.push({name:fn,data:encodeWav(out,t.sr,bits)});
+    if(raw) files.push({name:`Raw/${folder}/${takeName(t)}_raw.wav`,data:encodeWav(d,t.sr,bits)});
+    const parent=it.parentId?itemById(it.parentId):null;
+    rows.push([fn,it.label,it.kind==="alt"?"alternate of "+(parent?parent.label:"?"):it.kind,it.group||"",t.n,t.keep?"yes":"",it.text,it.note||"",(out.length/t.sr).toFixed(2)]);
+    await new Promise(r=>setTimeout(r,0));
+  }
+  const csv=rows.map(r=>r.map(c=>{c=String(c);return /[",\n]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c;}).join(",")).join("\r\n");
+  files.push({name:"manifest.csv",data:new TextEncoder().encode("﻿"+csv)});
+  const s=S.settings;
+  files.push({name:"processing_settings.txt",data:new TextEncoder().encode(
+`Worm Man VO export ${new Date().toLocaleString()}
+Compressor: threshold ${s.threshold} dB, ratio ${s.ratio}:1, attack ${s.attack} ms, release ${s.release} ms, knee ${s.knee} dB, makeup ${s.makeup} dB
+Low cut: ${s.hpOn?s.hpFreq+" Hz":"off"}
+Trim silence: ${s.trim?"on":"off"}  Normalize: ${s.normalize?s.normDb+" dBFS peak":"off"}
+Format: ${bits}-bit mono WAV`)});
+  st.textContent="Zipping...";
+  const zip=makeZip(files);
+  const stamp=new Date().toISOString().slice(0,16).replace(/[:T]/g,"-");
+  const name=`WormMan_VO_${stamp}.zip`, info=`${pick.length} takes, ${(zip.size/1048576).toFixed(1)} MB`;
+  builtZip={blob:zip,name,info};
+  const sv=$("#exportSave"), sh=$("#exportShare"); sv.hidden=false;
+  let canShare=false; try{ canShare=!window.claude && !!navigator.canShare && navigator.canShare({files:[new File([new Uint8Array(1)],"a.zip",{type:"application/zip"})]}); }catch(e){}
+  sh.hidden=!canShare;
+  $("#exportGo").disabled=false;
+  if(matchMedia("(pointer:coarse)").matches){ st.textContent=`Zip is ready: ${info}. Tap ${canShare?"Share zip to send it, or ":""}Save zip.`; }
+  else { st.textContent=`Zip is ready: ${info}. Confirm the download if asked.`; const ok=await download(zip,name); st.textContent=ok?`Done. ${info}.`:`Zip is ready: ${info}. Click Save zip to try the download again.`; }
+}
+let builtZip=null;
+async function downloadOne(id){
+  const t=TAKES.find(x=>x.id===id); const d=await loadAudio(id); if(!d)return;
+  const out=await renderProcessed(d,t.sr); download(makeZip([{name:takeName(t)+".wav",data:encodeWav(out,t.sr,+S.settings.bits)}]),takeName(t)+".zip");
+}
+
+// ---------- script import ----------
+function parseScript(text){
+  text=text.replace(/\r/g,"");
+  let rows=text.split("\n");
+  // JSON array support
+  try{const j=JSON.parse(text); if(Array.isArray(j)) rows=j.map(x=>typeof x==="string"?x:(x.text||x.line||x.dialogue||""));}catch(e){}
+  // CSV with header
+  const isCSV=/,/.test(rows[0]||"") && /(^|,)\s*"?(line|text|dialogue|vo|script)"?\s*(,|$)/i.test(rows[0]);
+  if(isCSV){const hdr=splitCSV(rows[0]).map(h=>h.trim().toLowerCase());const ti=hdr.findIndex(h=>/^(line|text|dialogue|vo|script)$/.test(h));const ni=hdr.findIndex(h=>/note|direction|context|emotion/.test(h));const li=hdr.findIndex(h=>/^(id|label|name|key)$/.test(h));
+    rows=rows.slice(1).filter(r=>r.trim()).map(r=>{const c=splitCSV(r);return (li>=0&&c[li]?c[li]+" | ":"")+(c[ti]||"")+(ni>=0&&c[ni]?" ("+c[ni]+")":"");});}
+  const out=[]; let group="Script";
+  for(let raw of rows){
+    let t=raw.trim(); if(!t) continue;
+    if(/^#+\s*/.test(t)){group=t.replace(/^#+\s*/,"")||"Script";continue;}
+    let isAlt=false; if(/^(>|alt\s*[:\-])/i.test(t)){isAlt=true;t=t.replace(/^(>|alt\s*[:\-])\s*/i,"");}
+    let label=null; const m=t.match(/^([A-Za-z0-9_\-.]{1,40})\s*(\||\t)\s*(.+)$/); if(m){label=m[1];t=m[3];}
+    t=t.replace(/^\s*\d+\s*[.)\-:]\s+/,"");
+    t=t.replace(/^\s*worm\s*-?\s*man\s*:\s*/i,"");
+    let note=""; const nm=[...t.matchAll(/[\[(]([^\])]{1,120})[\])]/g)]; if(nm.length){note=nm.map(x=>x[1].trim()).join("; ");t=t.replace(/\s*[\[(][^\])]{1,120}[\])]\s*/g," ").trim();}
+    if(!t && note){t=note;note="";}
+    t=t.replace(/^"(.*)"$/,"$1").trim(); if(!t)continue;
+    out.push({text:t,note,label,isAlt,group});
+  }
+  return out;
+}
+function splitCSV(r){const o=[];let c="",q=false;for(let i=0;i<r.length;i++){const ch=r[i];if(q){if(ch==='"'){if(r[i+1]==='"'){c+='"';i++;}else q=false;}else c+=ch;}else if(ch==='"')q=true;else if(ch===","){o.push(c);c="";}else c+=ch;}o.push(c);return o;}
+function addScript(parsed){
+  const lines=S.items.filter(i=>i.kind==="line");
+  let num=lines.reduce((m,l)=>{const x=/^WM_(\d+)$/.exec(l.label);return x?Math.max(m,+x[1]):m;},0);
+  let last=null, added=0;
+  const usedLabels=new Set(S.items.map(i=>i.label));
+  const newItems=[];
+  for(const p of parsed){
+    if(p.isAlt && last){
+      const n=newItems.concat(S.items).filter(i=>i.kind==="alt"&&i.parentId===last.id).length;
+      newItems.push({id:uid(),kind:"alt",parentId:last.id,group:last.group,label:`${last.label}_alt${String.fromCharCode(65+n)}`,text:p.text,note:p.note});
+    } else {
+      let label=p.label?slug(p.label):`WM_${pad(++num,3)}`; while(usedLabels.has(label)) label=label+"b"; usedLabels.add(label);
+      last={id:uid(),kind:"line",group:p.group,label,text:p.text,note:p.note}; newItems.push(last);
+    }
+    added++;
+  }
+  // insert lines before sfx so order stays sensible
+  const sfx=S.items.filter(i=>i.kind==="sfx"), rest=S.items.filter(i=>i.kind!=="sfx");
+  S.items=rest.concat(newItems,sfx);
+  if(!itemById(S.cur) || itemById(S.cur).kind==="sfx") { const f=newItems.find(i=>i.kind==="line"); if(f && !TAKES.length) S.cur=f.id; }
+  save(); renderAll(); return added;
+}
+function addAlt(parent,text){
+  const n=S.items.filter(i=>i.kind==="alt"&&i.parentId===parent.id).length;
+  const it={id:uid(),kind:"alt",parentId:parent.id,group:parent.group,label:`${parent.label}_alt${String.fromCharCode(65+n)}`,text,note:""};
+  const idx=S.items.indexOf(parent); S.items.splice(idx+1+n,0,it); save(); return it;
+}
+function addSfxVariant(base){
+  const it={id:uid(),kind:"sfx",group:base.group,label:base.label+"_x"+pad(S.items.filter(i=>i.label.startsWith(base.label+"_x")).length+1),text:base.text+" (extra)",note:base.note,target:1};
+  S.items.splice(S.items.indexOf(base)+1,0,it); save(); return it;
+}
+
+const BAKED_VERSION=1;
+const BAKED_SCRIPT="# Ramblers: nonsense and small talk\nramble01 | BLORP.\n> BLORP BLORP.\n> BLARP.\nramble02 | WUBBA WUBBA WUBBA\n> WUBBA?\n> WUB WUB WUB\nramble03 | MEEP MORP\n> MORP MEEP\n> MEEP. MORP. MEEP.\nramble04 | FLIBBERTY JIBBET!\n> FLIBBERTY GIBBETS!\n> JIBBETY FLIBBET!\nramble05 | SOUP.\n> SOUP?\n> MORE SOUP.\nramble06 | MY LEGS ARE NOODLES\n> NOODLE LEGS!\n> MY ARMS ARE SPAGHETTI\nramble07 | HEE HEE HEE HOO HOO HOO\n> HOO HOO HEE HEE\n> HEE HOO HEE HOO\nramble08 | HA HA HA HA HA HA HA\n> HA. HA. HA.\n> HAAA HA HA!\nramble09 | GLORP GLORP GLORP\n> GLORP.\n> GLORPITY GLORP\nramble10 | I HAVE NO BONES\n> NO BONES!\n> WHERE ARE MY BONES?\nramble11 | SNORGLE?\n> SNORGLE.\n> SNORGLE SNORGLE?\nramble12 | BEANS BEANS BEANS BEANS\n> BEANS.\n> SO MANY BEANS\nramble13 | WHO IS STEVE?\n> STEVE?\n> WHERE IS STEVE?\nramble14 | MWAH HA HA HA HA\n> MWAH HA!\n> MWEH HEH HEH\nramble15 | ZIBBLE ZABBLE ZOO\n> ZIBBLE ZABBLE!\n> ZOO ZABBLE ZIBBLE\nramble16 | EXCUSE ME. EXCUSE ME.\n> PARDON ME.\n> COMING THROUGH.\nramble17 | I LEFT THE OVEN ON\n> OVEN'S ON!\n> DID I LOCK THE DOOR?\nramble18 | TEE HEE HEE HEE\n> TEE HEE.\n> TEE HEE HOO\nramble19 | WHEEEEEE!\n> WHEE!\n> WAHOOOO!\nramble20 | IS THIS THE DENTIST?\n> DENTIST?\n> I HAVE AN APPOINTMENT\nramble21 | I AM A LAMP\n> LAMP.\n> I AM A CHAIR\nramble22 | DO YOU HAVE WIFI?\n> WIFI?\n> WHAT'S THE PASSWORD?\nramble23 | MY MOM SAYS HI\n> HI FROM MOM\n> MY DAD SAYS HI\nramble24 | IS IT TUESDAY?\n> TUESDAY?\n> FEELS LIKE TUESDAY\nramble25 | I FORGOT MY LUNCH\n> MY LUNCH!\n> WHO TOOK MY LUNCH?\nramble26 | NICE TURRET\n> COOL TURRET\n> LOVE THE TURRET\nramble27 | WE COME IN PEACE\n> PEACE!\n> WE MEAN NO HARM\nramble28 | ARE WE THERE YET?\n> THERE YET?\n> HOW MUCH FARTHER?\nramble29 | I PAID FOR PARKING\n> I VALIDATED\n> TWO HOUR PARKING\nramble30 | BLEEP BLOOP BLORP\n> BLEEP BLOOP\n> BLORP BLOOP BLEEP\nramble31 | HONK. WAIT. WRONG GUY.\n> HONK. SORRY.\n> TOOT. NOPE. WRONG GUY.\nramble32 | LEFT. LEFT. LEFT RIGHT LEFT.\n> LEFT. RIGHT. LEFT.\n> HUP TWO THREE FOUR\nramble33 | I HAVE A COUPON\n> COUPON!\n> IT'S BUY ONE GET ONE\nramble34 | THIS IS MY CARDIO\n> CARDIO!\n> LEG DAY\nramble35 | ONE OF US. ONE OF US.\n> ONE OF US.\n> JOIN US. JOIN US.\nramble36 | DIBS ON THE TURRET\n> DIBS!\n> I CALLED IT\nramble37 | SQUISH SQUISH SQUISH\n> SQUISH.\n> SQUISHY SQUISH\nramble38 | NOT THE FACE!\n> MY FACE!\n> ANYWHERE BUT THE FACE!\nramble39 | I JUST WORK HERE\n> I'M NEW HERE\n> NOT MY DEPARTMENT\nramble40 | HEH HEH HEH HEH HEH\n> HEH.\n> HEH HEH. NICE.\nramble41 | GOOP IS LIFE\n> GOOP!\n> LIFE IS GOOP\nramble42 | DOES THIS LOOK INFECTED?\n> IS THIS INFECTED?\n> SHOULD IT BE GREEN?\nramble43 | I CAN SEE MY HOUSE FROM HERE\n> MY HOUSE!\n> I CAN SEE MY MOM FROM HERE\nramble44 | WOOP WOOP WOOP WOOP\n> WOOP.\n> WOOP WOOP!\nramble45 | THERE IS NO TURRET\n> NO TURRET.\n> WHAT TURRET?\n# Ramblers: philosophy, hot dogs and nuggies\nramble46 | I AM THE GOOP AND THE GOOP IS ME\n> I AM GOOP\n> THE GOOP IS ME\nramble47 | WHAT IS THE SOUND OF ONE WORM CLAPPING?\n> ONE WORM CLAPPING?\n> WORMS CAN'T CLAP\nramble48 | ATTACHMENT IS SUFFERING. ALSO, HOT DOGS.\n> SUFFERING. ALSO HOT DOGS.\n> LET GO. EXCEPT HOT DOGS.\nramble49 | I WANT CHICKEN NUGGIES\n> I NEED NUGGIES\n> CHICKEN NUGGIES, PLEASE\nramble50 | NUGGIES. NUGGIES. NUGGIES.\n> NUGGIES.\n> NUGGIES? NUGGIES!\nramble51 | IS A HOT DOG A SANDWICH?\n> HOT DOG. SANDWICH?\n> IS CEREAL A SOUP?\nramble52 | THE SELF IS AN ILLUSION\n> NO SELF.\n> I AM AN ILLUSION\nramble53 | WE ARE ALL ONE WORM\n> ONE WORM.\n> ALL WORMS ARE ONE\nramble54 | DESCARTES WAS WRONG ABOUT ME\n> DESCARTES WAS WRONG\n> SORRY, DESCARTES\nramble55 | I THINK, THEREFORE I SQUISH\n> I THINK. I SQUISH.\n> I SQUISH, THEREFORE I AM\nramble56 | BE HERE NOW. OW.\n> NOW. OW.\n> BE HERE. OW.\nramble57 | THE OBSERVER IS THE OBSERVED\n> I OBSERVE ME\n> WHO IS WATCHING?\nramble58 | WHO IS IT THAT RUNS?\n> WHO RUNS?\n> WHO IS RUNNING?\nramble59 | NOT TWO. NOT ONE. NUGGIES.\n> NOT ONE. NUGGIES.\n> NOT TWO. TEN PIECE.\nramble60 | DO YOU HAVE ANY HONEY MUSTARD?\n> HONEY MUSTARD?\n> GOT ANY RANCH?\nramble61 | THE BUDDHA WAS A WORM ONCE\n> BUDDHA WAS A WORM\n> I WAS THE BUDDHA ONCE\nramble62 | FORM IS EMPTINESS. EMPTINESS IS GOOP.\n> EMPTINESS IS GOOP.\n> FORM IS GOOP.\nramble63 | I HAVE SEEN THE HOT DOG AT THE END OF TIME\n> I HAVE SEEN THE HOT DOG\n> THE HOT DOG AWAITS\nramble64 | NIETZSCHE OWES ME MONEY\n> NIETZSCHE OWES ME\n> KANT OWES ME TEN BUCKS\nramble65 | WHY IS THERE SOMETHING INSTEAD OF NUGGIES?\n> WHY NOT NUGGIES?\n> WHY IS THERE ANYTHING?\nramble66 | SIX PIECE OR TEN PIECE? THERE IS NO PIECE.\n> THERE IS NO PIECE.\n> SIX PIECE? NO PIECE.\nramble67 | THIS TOO SHALL SPLAT\n> ALL THINGS SPLAT\n> THIS TOO SHALL GOOP\nramble68 | I AM AWARENESS ITSELF. AND HUNGRY.\n> I AM AWARE. AND HUNGRY.\n> PURE AWARENESS. ALSO SNACKS.\nramble69 | THE MAP IS NOT THE TERRITORY. THE MAP IS HOT DOGS.\n> THE MAP IS HOT DOGS.\n> THE TERRITORY IS HOT DOGS.\nramble70 | LET GO. LET GOOP.\n> LET GOOP.\n> LET IT GOOP.\nramble71 | MUSTARD IS A STATE OF MIND\n> MUSTARD IS WITHIN\n> KETCHUP IS A STATE OF MIND\nramble72 | ARE YOU GOING TO FINISH THAT HOT DOG?\n> YOU GONNA EAT THAT?\n> FINISHING THAT HOT DOG?\nramble73 | SAMSARA IS JUST A BIG CIRCLE OF RUNNING\n> SAMSARA IS RUNNING\n> RUNNING IN CIRCLES. SAMSARA.\nramble74 | PLATO'S CAVE HAD BETTER SNACKS\n> NICE CAVE, PLATO\n> PLATO HAD SNACKS\nramble75 | I DIPPED MY EGO IN BARBECUE SAUCE\n> MY EGO NEEDS SAUCE\n> EGO. DIPPED.\nramble76 | WE COME FROM NOTHING. WE RETURN TO NUGGIES.\n> WE RETURN TO NUGGIES.\n> FROM NOTHING. TO NUGGIES.\n# Sent flying (shown on screen only in the game today)\nfly01 | WHEEEE (knocked into the air)\n> WHEE!\n> WAHOO\nfly02 | I CAN FLY (knocked into the air)\n> I'M FLYING\n> LOOK, NO LEGS\nfly03 | NOT AGAIN (knocked into the air)\n> AGAIN?!\n> EVERY TIME\nfly04 | AAAAAAAA (knocked into the air)\n> AAAH!\n> WAAAAAH\nfly05 | WORTH IT (knocked into the air)\n> NO REGRETS\n> TOTALLY WORTH IT\nfly06 | TELL MY WIFE (knocked into the air)\n> TELL BRENDA\n> TELL MY MOM\nfly07 | OH NO (knocked into the air)\n> UH OH\n> OH NO NO NO\nfly08 | MY SOUP (knocked into the air)\n> NOT MY SOUP\n> SAVE THE SOUP\nfly09 | PUT ME DOWN (knocked into the air)\n> DOWN, PLEASE\n> LET ME DOWN\nfly10 | I CAN SEE MY HOUSE (knocked into the air)\n> MY HOUSE!\n> HI, HOUSE\nfly11 | THIS IS FINE (knocked into the air)\n> I'M FINE\n> IT'S FINE\nfly12 | AGAIN! AGAIN! (knocked into the air)\n> AGAIN!\n> ONE MORE TIME!\n# Special worm men\nsmol_landing | ONE SMOL STEP FOR WORMKIND! (Commander Smol the astronaut, when he lands. His own voice.)\n> ONE SMOL STEP!\n> THE WORM HAS LANDED!\ngary_wizard_arrives | BEHOLD! I HAVE NO IDEA WHAT THIS DOES! (Gary the Grey, the wizard, when he arrives. His own voice.)\n> BEHOLD! UH...\n> NO IDEA WHAT THIS DOES!\ngary_wizard_oh | *OH* (Gary the Grey, when his staff comes down and gravity breaks)\n> OOPS\n> OH NO\ndoug_arrives | RAWR MEANS I LOVE YOU! (Doug the inflatable dinosaur, when he arrives. His own voice.)\n> RAWR!\n> RAWR. LOVE YOU.\nkazoo_balloon | *pfffffffft* (Kazoo player, shot and flying off like a balloon. A long deflating raspberry.)\n> *pfft*\n> *pffffffffft... squeak*\nwormgirl_giggle | TEE HEE HEE HEE HEE (Worm Girl, calling in more worm girls. A giggle.)\n> TEE HEE!\n> HEE HEE HEE\njanitor_arrives | HOLD ON. WE GOTTA CLEAN ALL OF THIS GOOP OFF. (Said for Gary the janitor when he comes in)\n> WE GOTTA CLEAN THIS UP.\n> HOLD ON. GOOP EVERYWHERE.\nthanks_gary | THANKS, GARY. (The worm men to Gary, when the floor is clean)\n> THANK YOU, GARY.\n> GOOD JOB, GARY.\n";
+const GAME_SFX=[
+ ["Shot by the turret","Quick yelp as he gets hit mid-run.",5],
+ ["Splat","The wet noise he makes turning into goop. Short.",5],
+ ["Flying scream","Long yell as he sails through the air, trailing off into the distance.",4],
+ ["Running babble","A few seconds of nonsense muttering while he runs. No real words.",4],
+ ["Crowd of worm men","Low gibberish murmur to layer into a swarm. Do several in different pitches.",4],
+ ["Big boy grunt","Low, heavy, slow version of an effort grunt.",3],
+ ["Tiny swarm squeak","High, fast, squeaky little yelps.",4],
+ ["Climbing into the turret","Muffled struggling and squeezing noises.",3],
+ ["Conga / marching chant","Rhythmic 'hup hup hup' or humming along.",3],
+ ["Cheer","Small group-style 'yaaay'.",3]
+];
+function applyBaked(){
+  if((S.baked||0)>=BAKED_VERSION) return;
+  const have=new Set(S.items.map(i=>i.label));
+  let skip=false; const parsed=[];
+  for(const p of parseScript(BAKED_SCRIPT)){ if(!p.isAlt) skip=have.has(slug(p.label||"")); if(!skip) parsed.push(p); }
+  const g=GAME_SFX.map(([name,note,target],i)=>({id:uid(),kind:"sfx",group:"SFX: This game",label:`SFX_GAME_${pad(i+1)}_${slug(name)}`,text:name,note,target})).filter(x=>!have.has(x.label));
+  const first=S.items.findIndex(i=>i.kind==="sfx"); S.items.splice(first<0?S.items.length:first,0,...g);
+  S.baked=BAKED_VERSION;
+  if(parsed.length) addScript(parsed);
+}
+
+// ---------- rendering ----------
+function renderAll(){renderList();renderBooth();renderFx();}
+function renderList(){
+  const list=$("#list"); const vis=visibleItems(); let g=null, html="";
+  for(const it of vis){
+    if(it.group!==g && it.kind!=="alt"){g=it.group;html+=`<div class="grp">${esc(g)}</div>`;}
+    const ts=takesOf(it.id), keep=ts.some(t=>t.keep);
+    const bd=it.kind==="sfx"?`${ts.length}/${it.target||1}`:(ts.length?`${ts.length} tk`:"");
+    html+=`<div class="it ${it.kind==="alt"?"alt":""} ${it.id===S.cur?"cur":""}" data-id="${it.id}"><div style="min-width:0"><div class="lab">${esc(it.label)}</div><div class="tx">${esc(it.text)}</div></div><div class="bd ${isDone(it)?"done":""}">${keep?"★ ":""}${bd}</div></div>`;
+  }
+  if(!vis.length) html=`<div class="faint" style="padding:16px">Nothing here.</div>`;
+  list.innerHTML=html;
+  const cur=list.querySelector(".it.cur"); if(cur){ const lr=list.getBoundingClientRect(), cr=cur.getBoundingClientRect(); if(cr.top<lr.top) list.scrollTop-=lr.top-cr.top+8; else if(cr.bottom>lr.bottom) list.scrollTop+=cr.bottom-lr.bottom+8; }
+  const all=orderedItems(), lines=all.filter(i=>i.kind!=="sfx"), fx=all.filter(i=>i.kind==="sfx");
+  $("#progress").textContent=`Lines ${lines.filter(isDone).length}/${lines.length} · Sound FX ${fx.filter(isDone).length}/${fx.length} · ${TAKES.length} takes`;
+}
+function renderBooth(){
+  const b=$("#booth"); const it=itemById(S.cur);
+  if(!it){ b.innerHTML=`<div class="empty"><h2>Pick something to record</h2><p>Load your friend's lines with <b>Load script</b>, or pick a sound effect from the list on the left.</p></div>`; return; }
+  const parent=it.parentId?itemById(it.parentId):null;
+  const hasLines=S.items.some(i=>i.kind==="line");
+  b.innerHTML=`
+    ${!stream?`<div class="banner">${micError?esc(micError):"Click <b>Enable mic</b> at the top to start. You'll be asked for mic permission."}</div>`:""}
+    ${!hasLines&&it.kind==="sfx"?`<div class="banner">No script lines loaded yet. Use <b>Load script</b> to add your friend's lines. Sound FX are ready to go below.</div>`:""}
+    <div class="cardtop"><span class="chip">${esc(it.label)}</span><span class="chip kind">${it.kind==="sfx"?"Sound effect":it.kind==="alt"?"Alternate":"Line"}</span><span class="faint">${esc(it.group||"")}</span>
+      <div class="spacer"></div><span id="target"></span><span class="navb"><button class="small ghost" id="prevBtn" title="Previous item">← Prev</button><button class="small ghost" id="nextSmall" title="Next item">Next →</button></span></div>
+    ${parent?`<div id="bParent">Alternate of <b>${esc(parent.label)}</b>: “${esc(parent.text)}”</div>`:""}
+    <div id="bText" class="${it.kind==="sfx"?"sfx":""}">${esc(it.text)}</div>
+    <div id="bNote">${esc(it.note||"")}</div>
+    <div class="transport">
+      <button id="recBtn" title="Record (Space)"><i></i></button>
+      <div id="recInfo"><div id="recTime">0:00.0</div><div id="recState">Ready</div></div>
+      <div class="after" id="after"></div>
+    </div>
+    <div class="takes" id="takes"></div>
+    <div class="edrow">
+      <button class="small" id="editBtn">Edit text</button>
+      ${it.kind!=="sfx"?`<button class="small" id="altBtn">+ Add alternate</button>`:`<button class="small" id="moreBtn">+ Extra slot for this sound</button><button class="small" id="tgtBtn">Target: ${it.target||1} variations</button>`}
+      <div class="spacer"></div>
+      <button class="small ghost" id="rmItem">Remove item</button>
+    </div>
+    <div class="edrow" id="altRow" hidden><input type="text" id="altInput" placeholder="Alternate line text" style="flex:1;min-width:0"><button class="small primary" id="altSave">Add alternate</button></div>`;
+  $("#recBtn").onclick=()=>recording?stopRec():startRec();
+  $("#editBtn").onclick=toggleEdit; $("#prevBtn").onclick=()=>go(-1); $("#nextSmall").onclick=()=>go(1);
+  const ab=$("#altBtn"); if(ab){ const row=$("#altRow"), inp=$("#altInput");
+    const addIt=()=>{const tx=inp.value.trim();if(!tx)return;const a=addAlt(it.kind==="alt"?parent:it,tx);inp.value="";row.hidden=true;renderList();toast("Added "+a.label);};
+    ab.onclick=()=>{row.hidden=!row.hidden;if(!row.hidden)inp.focus();};
+    $("#altSave").onclick=addIt; inp.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();addIt();}}); }
+  const mb=$("#moreBtn"); if(mb) mb.onclick=()=>{const n=addSfxVariant(it);S.cur=n.id;save();renderAll();};
+  const tb=$("#tgtBtn"); if(tb) tb.onclick=()=>{it.target=(it.target||1)%8+1;save();renderBooth();renderList();};
+  armTwoClick($("#rmItem"),"Really remove?",async()=>{
+    const kids=S.items.filter(i=>i.parentId===it.id);
+    for(const x of [it,...kids]){ for(const t of takesOf(x.id)){await DB.del("takes",t.id);await DB.del("audio",t.id);} TAKES=TAKES.filter(t=>t.itemId!==x.id); }
+    const vis=visibleItems(); const idx=vis.indexOf(it);
+    S.items=S.items.filter(i=>i!==it&&i.parentId!==it.id);
+    const nv=visibleItems(); S.cur=nv.length?nv[Math.min(idx,nv.length-1)].id:null; save(); renderAll();
+  });
+  renderTransport(); renderTakes();
+}
+function toggleEdit(){
+  const t=$("#bText"),n=$("#bNote"),btn=$("#editBtn"),it=itemById(S.cur);
+  const on=t.getAttribute("contenteditable")!=="true";
+  t.setAttribute("contenteditable",on);n.setAttribute("contenteditable",on);btn.textContent=on?"Done editing":"Edit text";
+  if(on){t.focus();}else{it.text=t.innerText.trim()||it.text;it.note=n.innerText.trim();save();renderList();}
+}
+function renderTransport(){
+  const it=itemById(S.cur); if(!it||!$("#recBtn"))return;
+  $("#recBtn").classList.toggle("on",recording);
+  const rs=$("#recState"); const touch=matchMedia("(pointer:coarse)").matches;
+  rs.textContent=recording?(touch?"● RECORDING  (tap to stop)":"● RECORDING  (Space to stop, Esc to cancel)"):(stream?(touch?"Ready. Tap the red button.":"Ready. Press Space to record."):"Mic is off"); rs.classList.toggle("on",recording);
+  if(!recording) $("#recTime").textContent="0:00.0";
+  const ts=takesOf(it.id), af=$("#after");
+  if(recording){af.innerHTML="";}
+  else if(ts.length){
+    const sfx=it.kind==="sfx";
+    af.innerHTML=`<button id="againBtn">${sfx?"● Another one":"● Another take"} <kbd>Space</kbd></button><button id="nextBtn" class="primary">Next → <kbd>Enter</kbd></button>`;
+    $("#againBtn").onclick=startRec; $("#nextBtn").onclick=()=>go(1);
+  } else af.innerHTML=`<button id="skipBtn" class="ghost">Skip →</button>`, $("#skipBtn").onclick=()=>go(1);
+  const tg=$("#target"); if(tg){ tg.textContent=it.kind==="sfx"?`${ts.length} of ${it.target||1} variations`:`${ts.length} take${ts.length===1?"":"s"}`; }
+}
+function renderTakes(){
+  const it=itemById(S.cur), box=$("#takes"); if(!box)return;
+  const ts=takesOf(it.id).slice().reverse();
+  if(!ts.length){box.innerHTML=`<div class="faint">No takes yet.</div>`;return;}
+  box.innerHTML=ts.map(t=>`<div class="take ${t.keep?"keep":""}" data-id="${t.id}">
+    <div class="nm">${it.kind==="sfx"?"v":"Take "}${pad(t.n)}<small>${(t.len/t.sr).toFixed(1)}s · ${new Date(t.at).toLocaleTimeString([], {hour:"numeric",minute:"2-digit"})}</small></div>
+    <canvas data-play="${t.id}"></canvas>
+    <div class="acts"><button class="small" data-act="play">▶</button><button class="star ghost ${t.keep?"on":""}" data-act="star" title="Keeper (S)">★</button><button class="small ghost" data-act="dl" title="Download this take (processed WAV in a zip)">⤓</button><button class="small ghost" data-act="del" title="Delete take">✕</button></div></div>`).join("");
+  ts.forEach(t=>drawWave(t));
+  renderTakesState();
+}
+async function drawWave(t){
+  const c=document.querySelector(`canvas[data-play="${t.id}"]`); if(!c)return;
+  const d=await loadAudio(t.id); if(!d||!c.isConnected)return;
+  const w=c.clientWidth||400,h=40,dpr=window.devicePixelRatio||1; c.width=w*dpr;c.height=h*dpr; const g=c.getContext("2d"); g.scale(dpr,dpr);
+  g.fillStyle="#2a2420";g.fillRect(0,0,w,h); g.fillStyle=t.keep?"#e0b84a":"#c7774a";
+  const step=d.length/w;
+  for(let x=0;x<w;x++){let mn=0,mx=0;const a=Math.floor(x*step),b=Math.floor((x+1)*step);for(let i=a;i<b;i++){const v=d[i];if(v<mn)mn=v;if(v>mx)mx=v;} g.fillRect(x,h/2-mx*h/2,1,Math.max(1,(mx-mn)*h/2));}
+  c._base=g.getImageData(0,0,c.width,c.height);
+}
+function renderTakesState(){
+  document.querySelectorAll(".take").forEach(el=>{const b=el.querySelector('[data-act=play]'); if(b) b.textContent=(playing&&playing.id===el.dataset.id)?"■":"▶";});
+}
+function progressLoop(){
+  if(!playing)return; const c=document.querySelector(`canvas[data-play="${playing.id}"]`);
+  if(c&&c._base){const g=c.getContext("2d");g.putImageData(c._base,0,0);const p=(ctx.currentTime-playing.t0)/playing.dur;g.fillStyle="#fff";g.fillRect(Math.min(1,p)*c.width,0,2*(window.devicePixelRatio||1),c.height);}
+  requestAnimationFrame(()=>{ if(playing) progressLoop(); else if(c&&c._base) c.getContext("2d").putImageData(c._base,0,0); });
+}
+$("#booth").addEventListener("click",async e=>{
+  const take=e.target.closest(".take"); if(!take)return; const id=take.dataset.id; const t=TAKES.find(x=>x.id===id);
+  const act=e.target.dataset.act||(e.target.tagName==="CANVAS"?"play":null);
+  if(act==="play"){ if(playing&&playing.id===id) stopPlayback(); else play(id); }
+  if(act==="star"){ t.keep=!t.keep; await DB.put("takes",t); renderTakes(); renderList(); }
+  if(act==="dl"){ downloadOne(id); }
+  if(act==="del"){ const btn=e.target; if(btn.dataset.armed){ if(playing&&playing.id===id)stopPlayback(); await DB.del("takes",id); await DB.del("audio",id); TAKES=TAKES.filter(x=>x.id!==id); audioCache.delete(id); renderTakes(); renderTransport(); renderList(); } else { btn.dataset.armed=1; btn.textContent="Delete?"; setTimeout(()=>{if(btn.isConnected){delete btn.dataset.armed;btn.textContent="✕";}},2500);} }
+});
+function armTwoClick(btn,label,fn){const orig=btn.textContent;btn.onclick=()=>{if(btn.dataset.armed){fn();}else{btn.dataset.armed=1;btn.textContent=label;setTimeout(()=>{if(btn.isConnected){delete btn.dataset.armed;btn.textContent=orig;}},2500);}};}
+
+$("#list").addEventListener("click",e=>{const el=e.target.closest(".it");if(!el||recording)return;S.cur=el.dataset.id;save();stopPlayback();renderList();renderBooth();});
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x===b));S.filter=b.dataset.f;save();renderList();});
+
+function go(dir){
+  if(recording)return; const vis=visibleItems(); if(!vis.length)return;
+  let i=vis.findIndex(x=>x.id===S.cur); i=i<0?0:Math.max(0,Math.min(vis.length-1,i+dir));
+  if(S.filter==="todo"&&dir>0){ const cur=S.cur; const nx=vis.slice(i).find(x=>x.id!==cur&&!isDone(x)); if(nx){S.cur=nx.id;} else S.cur=vis[i].id; }
+  else S.cur=vis[i].id;
+  stopPlayback(); save(); renderList(); renderBooth();
+}
+
+// fx panel
+const FXKEYS=["threshold","ratio","attack","release","knee","makeup","hpFreq"];
+const FXFMT={threshold:v=>v+" dB",ratio:v=>v+":1",attack:v=>v+" ms",release:v=>v+" ms",knee:v=>v+" dB",makeup:v=>"+"+v+" dB",hpFreq:v=>v+" Hz"};
+function renderFx(){
+  const s=S.settings;
+  for(const k of FXKEYS){$("#"+k).value=s[k];$("#v_"+k).textContent=FXFMT[k](s[k]);}
+  for(const k of ["bypass","hpOn","trim","normalize","autoplay","autoNextLines"]) $("#"+k).checked=!!s[k];
+  $("#normDb").value=s.normDb; $("#bits").value=s.bits;
+  $("#presets").innerHTML=Object.keys(PRESETS).map(p=>`<button data-p="${p}">${p}</button>`).join("");
+}
+for(const k of FXKEYS) $("#"+k).addEventListener("input",e=>{S.settings[k]=+e.target.value;$("#v_"+k).textContent=FXFMT[k](S.settings[k]);if(ctx)applyParams(playHP,playComp,playMake);save();});
+for(const k of ["bypass","hpOn","trim","normalize","autoplay","autoNextLines"]) $("#"+k).addEventListener("change",e=>{S.settings[k]=e.target.checked;if(ctx)routePlay();save();});
+$("#normDb").addEventListener("change",e=>{S.settings.normDb=Math.min(0,+e.target.value||-1);save();});
+$("#bits").addEventListener("change",e=>{S.settings.bits=e.target.value;save();});
+$("#presets").addEventListener("click",e=>{const p=e.target.dataset.p;if(!p)return;Object.assign(S.settings,{attack:5,release:150,knee:6},PRESETS[p]);renderFx();if(ctx)applyParams(playHP,playComp,playMake);save();toast("Preset: "+p);});
+
+// header + modals
+$("#micBtn").onclick=enableMic;
+$("#micSel").onchange=e=>{S.settings.deviceId=e.target.value;save();enableMic();};
+const openM=id=>$(id).classList.add("on"), closeM=id=>$(id).classList.remove("on");
+$("#scriptBtn").onclick=()=>openM("#scriptModal");
+$("#scriptCancel").onclick=()=>closeM("#scriptModal");
+$("#scriptFile").onchange=async e=>{const f=e.target.files[0];if(f)$("#scriptText").value=await f.text();};
+$("#scriptAdd").onclick=()=>{const p=parseScript($("#scriptText").value);if(!p.length){toast("No lines found");return;}const n=addScript(p);closeM("#scriptModal");$("#scriptText").value="";toast(`Added ${n} lines`);};
+armTwoClick($("#clearUnrecorded"),"Click again to remove",()=>{const before=S.items.length;S.items=S.items.filter(i=>i.kind==="sfx"||takesOf(i.id).length||S.items.some(k=>k.parentId===i.id&&takesOf(k.id).length));if(!itemById(S.cur))S.cur=(visibleItems()[0]||{}).id||null;save();renderAll();toast(`Removed ${before-S.items.length}`);closeM("#scriptModal");});
+$("#exportBtn").onclick=()=>{$("#exportStatus").textContent="";builtZip=null;$("#exportSave").hidden=true;$("#exportShare").hidden=true;openM("#exportModal");};
+$("#exportCancel").onclick=()=>closeM("#exportModal");
+$("#exportSave").onclick=async()=>{ if(!builtZip)return; const ok=await download(builtZip.blob,builtZip.name); if(ok)$("#exportStatus").textContent=`Saved. ${builtZip.info}.`; };
+$("#exportShare").onclick=async()=>{ if(!builtZip)return; try{ await navigator.share({files:[new File([builtZip.blob],builtZip.name,{type:"application/zip"})],title:"Worm Man VO"}); $("#exportStatus").textContent=`Shared. ${builtZip.info}.`; }catch(e){ if(e&&e.name!=="AbortError") $("#exportStatus").textContent="Sharing failed: "+(e.message||e)+". Use Save zip instead."; } };
+$("#exportGo").onclick=()=>{ensureCtx();doExport().catch(e=>{$("#exportStatus").textContent="Export failed: "+e.message;$("#exportGo").disabled=false;});};
+$("#helpBtn").onclick=()=>openM("#helpModal"); $("#helpClose").onclick=()=>closeM("#helpModal");
+document.querySelectorAll(".modal").forEach(m=>m.addEventListener("mousedown",e=>{if(e.target===m)m.classList.remove("on");}));
+
+document.addEventListener("keydown",e=>{
+  if(e.target.closest("input,textarea,select,[contenteditable=true]"))return;
+  if(document.querySelector(".modal.on")){if(e.key==="Escape")document.querySelectorAll(".modal.on").forEach(m=>m.classList.remove("on"));return;}
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  const k=e.key;
+  if(k===" "){e.preventDefault(); if(e.repeat)return; recording?stopRec():startRec();}
+  else if(k==="Escape"&&recording){stopRec(true);}
+  else if(k==="Enter"){e.preventDefault();go(1);}
+  else if(k==="ArrowDown"){e.preventDefault();go(1);}
+  else if(k==="ArrowUp"){e.preventDefault();go(-1);}
+  else if(k==="p"||k==="P"){const ts=takesOf(S.cur);if(ts.length){const id=ts[ts.length-1].id;playing&&playing.id===id?stopPlayback():play(id);}}
+  else if(k==="s"||k==="S"){const ts=takesOf(S.cur);if(ts.length){const t=ts[ts.length-1];t.keep=!t.keep;DB.put("takes",t);renderTakes();renderList();}}
+  else if(k==="b"||k==="B"){S.settings.bypass=!S.settings.bypass;$("#bypass").checked=S.settings.bypass;if(ctx)routePlay();save();toast(S.settings.bypass?"Bypass on (raw)":"Processing on");}
+});
+["pointerdown","keydown"].forEach(ev=>document.addEventListener(ev,()=>{if(ctx&&ctx.state==="suspended")ctx.resume();},true));
+window.addEventListener("beforeunload",e=>{if(recording){e.preventDefault();e.returnValue="";}});
+
+// ---------- desktop app hooks (only inside Claude) ----------
+function drawIcon(){const c=document.createElement("canvas");c.width=c.height=256;const g=c.getContext("2d");
+  g.fillStyle="#1e1a17";g.fillRect(0,0,256,256);g.strokeStyle="#e39a6b";g.lineWidth=30;g.lineCap="round";g.lineJoin="round";
+  g.beginPath();g.moveTo(52,176);g.bezierCurveTo(52,96,112,216,128,128);g.bezierCurveTo(144,40,204,150,204,80);g.stroke();
+  g.fillStyle="#ff4d4d";g.beginPath();g.arc(204,80,20,0,7);g.fill();return c.toDataURL("image/png");}
+(async()=>{ try{
+  const desktop=window.claude&&window.claude.use?await window.claude.use("desktop"):null; if(!desktop)return;
+  if(desktop.app&&desktop.app.dock) desktop.app.dock.setIcon(drawIcon()).catch(()=>{});
+  if(desktop.install && (await desktop.install.state())==="available"){ const b=$("#installBtn"); b.hidden=false; b.onclick=()=>desktop.install.request().catch(()=>{}); }
+}catch(e){} })();
+
+if(window.claude&&window.claude.use){ const b=$("#dlBoothBtn"); b.hidden=false; b.onclick=async()=>{
+  b.disabled=true;
+  try{ const r=await fetch("booth-file.html"); if(!r.ok) throw new Error("HTTP "+r.status); const t=await r.text();
+    const ok=await download(new Blob([t],{type:"text/html"}),"WormMan_VO_Booth.html");
+    if(ok) toast("Saved. Open WormMan_VO_Booth.html from your Downloads folder in Chrome or Edge."); }
+  catch(e){ toast("Couldn't get the file: "+(e.message||e)); }
+  b.disabled=false; }; }
+
+// ---------- boot ----------
+(async()=>{
+  try{ await DB.open(); }catch(e){ document.body.insertAdjacentHTML("afterbegin",`<div class="banner">This browser blocked storage, so takes won't be saved between sessions. Try Chrome or Edge.</div>`); }
+  let st=null; try{ st=DB.db?await DB.get("meta","state"):null; TAKES=DB.db?await DB.all("takes"):[]; }catch(e){}
+  if(st){ S.items=st.items||[]; S.cur=st.cur; S.filter=st.filter||"all"; S.baked=st.baked||0; S.settings={...DEFAULT_SETTINGS,...(st.settings||{})}; }
+  if(!S.items.some(i=>i.kind==="sfx")) S.items=S.items.concat(buildSfxItems());
+  applyBaked();
+  if(!itemById(S.cur)) S.cur=(orderedItems()[0]||{}).id||null;
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on",x.dataset.f===S.filter));
+  renderAll(); save();
+  try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); const est=navigator.storage&&await navigator.storage.estimate(); if(est) $("#storeInfo").textContent=`Storage used: ${(est.usage/1048576).toFixed(0)} MB`; }catch(e){}
+  // If permission already granted, turn mic on automatically
+  try{ const p=await navigator.permissions.query({name:"microphone"}); if(p.state==="granted") enableMic(); }catch(e){}
+})();
+</script>
+</body>
+</html>
